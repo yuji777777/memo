@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メモ</title>
+  <style>
+    #list {
+      margin: 20px 0;
+    }
+    button {
+      font-size: 18px;
+    }
+    [type=text] {
+      font-size: 20px;
+      margin: 8px;
+      width: 220px;
+    }
+    [type=checkbox]:checked + input {
+      background-color: #ccc;
+    }
+    </style>
+</head>
+<body>
+  <button id="allDel">全削除</button>
+<div id="list"></div>
+<div><input type="text" id="addText"><button id="addBtn">登録</button></div>
+<template><div><input type="checkbox"><input type="text"><button>削除</button></div></template>
+<script>
+  'use strict';
+
+const list = document.getElementById('list');
+const addText = document.getElementById('addText');
+const template = document.querySelector('template').innerHTML;
+const storageKey = 'memo';
+
+document.addEventListener('DOMContentLoaded', () => {
+  (JSON.parse(localStorage.getItem(storageKey)) ?? []).forEach(e => {
+    if (e.text === '') return;
+    list.insertAdjacentHTML('beforeend', template);
+    const parent = list.querySelector('div:last-of-type');
+    parent.querySelector('[type=text]').value = e.text;
+    parent.querySelector('[type=checkbox]').checked = e.check;
+  });
+});
+
+const addList = () => {
+  if (addText.value.trim() === '') return;
+  list.insertAdjacentHTML('beforeend', template);
+  list.querySelector('div:last-of-type [type=text]').value = addText.value.trim();
+  addText.value = '';
+};
+
+document.getElementById('addBtn').addEventListener('click', () => save());
+addText.addEventListener('keydown', ev => ev.key === 'Enter' && save());
+
+list.addEventListener('click', ev => {
+  const target = ev.target;
+  const parent = target.closest('div');
+  if (target.tagName === 'BUTTON' && confirm(`${parent.querySelector('[type=text]').value}を削除しますか`)) {
+    parent.remove();
+    saveStorage();
+  }
+});
+
+list.addEventListener('keydown', ev => {
+  const target = ev.target;
+  const parent = target.closest('div');
+  if (target.tagName === 'INPUT' && ev.key === 'Enter' && target.value.trim() === '') {
+    parent.remove();
+    saveStorage();
+  }
+});
+
+document.getElementById('allDel').addEventListener('click', () => {
+  if (confirm('全てのリストを削除しますか')) {
+    list.textContent = '';
+    saveStorage();
+  }
+});
+
+const saveStorage = () => {
+  const listItems = [...list.querySelectorAll('div')];
+  if (!listItems.length) {
+    localStorage.removeItem(storageKey);
+    return;
+  }
+  localStorage.setItem(storageKey,
+    JSON.stringify(listItems.map(e => ({
+      text: e.querySelector('[type=text]').value.trim(),
+      check: e.querySelector('[type=checkbox]').checked,
+    })))
+  );
+};
+
+const save = () => {
+  addList();
+  saveStorage();
+};
+
+addEventListener('beforeunload', () => save());
+addEventListener('pagehide', () => save());
+</script>
+</body>
+</html>
