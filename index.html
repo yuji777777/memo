@@ -1,105 +1,199 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>メモ</title>
-  <style>
-    #list {
-      margin: 20px 0;
-    }
-    button {
-      font-size: 18px;
-    }
-    [type=text] {
-      font-size: 20px;
-      margin: 8px;
-      width: 220px;
-    }
-    [type=checkbox]:checked + input {
-      background-color: #ccc;
-    }
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メモ</title>
+    <style>
+      #list {
+        margin: 20px 0;
+      }
+
+      button {
+        font-size: 18px;
+      }
+
+      [type=text] {
+        font-size: 20px;
+        margin: 8px;
+        width: 220px;
+      }
+
+      [type=checkbox]:checked+input {
+        background-color: #ccc;
+      }
     </style>
-</head>
-<body>
-  <button id="allDel">全削除</button>
-<div id="list"></div>
-<div><input type="text" id="addText"><button id="addBtn">登録</button></div>
-<template><div><input type="checkbox"><input type="text"><button>削除</button></div></template>
-<script>
-  'use strict';
+  </head>
 
-const list = document.getElementById('list');
-const addText = document.getElementById('addText');
-const template = document.querySelector('template').innerHTML;
-const storageKey = 'memo';
+  <body>
+    <button id="allDel">全削除</button>
+    <div id="list"></div>
+    <div><input type="text" id="addText"><button id="addBtn">登録</button></div>
+    <template>
+      <div><input type="checkbox"><input type="text"><button>削除</button></div>
+    </template>
+    <script>
+      'use strict';
 
-document.addEventListener('DOMContentLoaded', () => {
-  (JSON.parse(localStorage.getItem(storageKey)) ?? []).forEach(e => {
-    if (e.text === '') return;
-    list.insertAdjacentHTML('beforeend', template);
-    const parent = list.querySelector('div:last-of-type');
-    parent.querySelector('[type=text]').value = e.text;
-    parent.querySelector('[type=checkbox]').checked = e.check;
-  });
-});
+      // IDが「list」のHTML要素を取得し、変数listに割り当てる
+      const list = document.getElementById('list');
+      // IDが「addText」のHTML要素を取得し、変数addTextに割り当てる
+      const addText = document.getElementById('addText');
+      // <template>要素を選択して、そのinnerHTMLを取得し、変数templateに割り当てる
+      const template = document.querySelector('template').innerHTML;
+      // ストレージキーを定義
+      const storageKey = 'memo';
 
-const addList = () => {
-  if (addText.value.trim() === '') return;
-  list.insertAdjacentHTML('beforeend', template);
-  list.querySelector('div:last-of-type [type=text]').value = addText.value.trim();
-  addText.value = '';
-};
 
-document.getElementById('addBtn').addEventListener('click', () => save());
-addText.addEventListener('keydown', ev => ev.key === 'Enter' && save());
+      /**
+       * localStorage からメモデータを取得し、それを元にメモリストを再構築し表示する。
+       * 
+       */
 
-list.addEventListener('click', ev => {
-  const target = ev.target;
-  const parent = target.closest('div');
-  if (target.tagName === 'BUTTON' && confirm(`${parent.querySelector('[type=text]').value}を削除しますか`)) {
-    parent.remove();
-    saveStorage();
-  }
-});
+      // ドキュメントの読み込みが完了したら実行
+      document.addEventListener('DOMContentLoaded', () => {
+        // localStorageからメモデータを取得し、JSONパースして配列に変換
+        (JSON.parse(localStorage.getItem(storageKey)) ?? []).forEach(e => {
+          if (e.text === '') return;
 
-list.addEventListener('keydown', ev => {
-  const target = ev.target;
-  const parent = target.closest('div');
-  if (target.tagName === 'INPUT' && ev.key === 'Enter' && target.value.trim() === '') {
-    parent.remove();
-    saveStorage();
-  }
-});
+          // テンプレートをリストに挿入
+          list.insertAdjacentHTML('beforeend', template);
 
-document.getElementById('allDel').addEventListener('click', () => {
-  if (confirm('全てのリストを削除しますか')) {
-    list.textContent = '';
-    saveStorage();
-  }
-});
+          // 挿入した要素の親を取得
+          const parent = list.querySelector('div:last-of-type');
 
-const saveStorage = () => {
-  const listItems = [...list.querySelectorAll('div')];
-  if (!listItems.length) {
-    localStorage.removeItem(storageKey);
-    return;
-  }
-  localStorage.setItem(storageKey,
-    JSON.stringify(listItems.map(e => ({
-      text: e.querySelector('[type=text]').value.trim(),
-      check: e.querySelector('[type=checkbox]').checked,
-    })))
-  );
-};
+          // テキストとチェックボックスの値を設定
+          parent.querySelector('[type=text]').value = e.text;
+          parent.querySelector('[type=checkbox]').checked = e.check;
+        });
+      });
 
-const save = () => {
-  addList();
-  saveStorage();
-};
 
-addEventListener('beforeunload', () => save());
-addEventListener('pagehide', () => save());
-</script>
-</body>
+      /*
+      *テキスト入力欄にメモを追加し、それをメモリストに表示できます。
+      *また、メモリスト内のメモは削除することもできる。
+      */
+
+      // 新しいメモをリストに追加する関数
+      const addList = () => {
+        
+        // 入力されたテキストが空白でない場合のみ処理を続行
+        if (addText.value.trim() === '') return;
+
+        // テンプレートをリストに挿入
+        list.insertAdjacentHTML('beforeend', template);
+        
+        // 挿入した要素のテキスト入力に値を設定
+        list.querySelector('div:last-of-type [type=text]').value = addText.value.trim();
+        
+        // 入力欄をクリア
+        addText.value = '';
+      };
+
+      /*
+      *ユーザーが追加ボタンをクリックしたり、Enter キーを押したり
+      *メモリスト内の削除ボタンをクリックしたときに
+      *対応する関数を呼び出すためのリスナーを設定しています。
+      */
+
+      // 追加ボタンのクリックイベントリスナー
+      document.getElementById('addBtn').addEventListener('click', () => save());
+      
+      // 入力欄でEnterキーが押されたときのイベントリスナー
+      addText.addEventListener('keydown', ev => ev.key === 'Enter' && save());
+
+
+      // メモリスト内でのクリックイベントリスナー
+      list.addEventListener('click', ev => {
+        const target = ev.target;
+        const parent = target.closest('div');
+
+        // ボタンがクリックされ、かつ確認が得られた場合
+        if (target.tagName === 'BUTTON' && confirm(`${parent.querySelector('[type=text]').value}を削除しますか`)) {
+
+          // 親要素を削除
+          parent.remove();
+
+          // メモの変更を保存
+          saveStorage();
+        }
+      });
+
+
+      /*
+      *テキスト入力欄の値が空白である場合に、
+      *対応するメモを削除し、その変更を localStorage に保存することです
+      */
+
+      // list 内でキーダウンイベントをリッスン
+      list.addEventListener('keydown', ev => {
+        const target = ev.target; // イベントが発生した要素
+        const parent = target.closest('div'); // イベントが発生した要素の親である div 要素を取得
+
+        // イベントが発生した要素が INPUT 要素であり、Enter キーが押され、かつ INPUT 要素の値が空白の場合
+        if (target.tagName === 'INPUT' && ev.key === 'Enter' && target.value.trim() === '') {
+
+          // 親要素を削除
+          parent.remove();
+
+          // メモの変更を保存
+          saveStorage();
+        }
+      });
+
+      // 「allDel」ボタンのクリックイベントリスナー
+      document.getElementById('allDel').addEventListener('click', () => {
+
+        // ユーザーが確認ダイアログで「全てのリストを削除しますか」を選択した場合
+        if (confirm('全てのリストを削除しますか')) {
+
+          // メモリストの内容を空にする
+          list.textContent = '';
+
+          // メモの変更を保存
+          saveStorage();
+        }
+      });
+
+
+      /*
+      *メモが追加・削除されたときに呼び出され
+      *メモの状態をブラウザの localStorage に永続的に保存するために使用されます。
+      */
+
+      // メモリストの内容を localStorage に保存する関数
+      const saveStorage = () => {
+        // メモリスト内の全ての div 要素を取得
+        const listItems = [...list.querySelectorAll('div')];
+
+        // もしメモリストが空であれば、指定されたキーのデータを localStorage から削除
+        if (!listItems.length) {
+          localStorage.removeItem(storageKey);
+          return;
+        }
+
+        // メモリストの各項目を JSON 形式に変換して localStorage に保存
+        localStorage.setItem(storageKey,
+          JSON.stringify(listItems.map(e => ({
+            text: e.querySelector('[type=text]').value.trim(),
+            check: e.querySelector('[type=checkbox]').checked,
+          })))
+        );
+      };
+
+      // 「save」関数：新しいメモを追加し、変更を localStorage に保存する
+      const save = () => {
+        addList(); // 新しいメモを追加
+        saveStorage(); // 変更を localStorage に保存
+      };
+
+      // ページがアンロード（beforeunload）される前に「save」関数を実行
+      addEventListener('beforeunload', () => save());
+
+      // ページが非表示（pagehide）になる前にも「save」関数を実行
+      addEventListener('pagehide', () => save());
+    </script>
+  </body>
+
 </html>
